@@ -1,0 +1,10 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "QuickbooksTrigger-Dev"
+s3_bucket = "charterandgo-deploy-dev"
+s3_prefix = "QuickbooksTrigger"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
