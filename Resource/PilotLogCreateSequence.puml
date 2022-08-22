@@ -1,0 +1,78 @@
+@startuml Inventory Sequence Diagram
+skinparam componentStyle uml2
+!define AWSPuml https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/master/dist
+!includeurl AWSPuml/AWSCommon.puml
+!includeurl AWSPuml/Compute/all.puml
+!includeurl AWSPuml/Mobile/APIGateway.puml
+!includeurl AWSPuml/General/InternetGateway.puml
+!includeurl AWSPuml/Database/RDSPostgreSQLinstance.puml
+!includeurl AWSPuml/Storage/SimpleStorageServiceS3.puml
+!includeurl AWSPuml/ApplicationIntegration/all.puml
+!includeurl AWSPuml/Storage/all.puml
+
+skinparam sequence {
+
+ParticipantFontName Impact
+ParticipantFontSize 34
+ActorFontSize 34
+
+}
+
+skinparam titleFontSize 55
+title <b><u>QUICKBOOKS Sequence Diagram</u></b>
+
+autonumber "<b>[000]"
+
+autonumber 001 "<b>[000]"
+SQSParticipant(orderTrigger,orderTrigger, json)
+LambdaParticipant(QUICKBOOKS,QUICKBOOKS \nDomain \nServices,json)
+LambdaParticipant(BUSINESSPROFILE,BUSINESS PROFILE \nDomain \nServices,json)
+APIGatewayParticipant(QUICKBOOKSAPI, QUICKBOOKS, web)
+
+
+
+note over WEBSITE
+    Order Updated
+end note
+
+WEBSITE -> QUICKBOOKS: json request
+
+QUICKBOOKS -> QUICKBOOKS: extract order contents
+QUICKBOOKS -> QUICKBOOKS: valid tripType (not 86 or 99)
+QUICKBOOKS -> QUICKBOOKS: valid orderStatus (closed)
+
+note over QUICKBOOKS
+    check: valid order to proceed
+end note
+
+QUICKBOOKS -> BUSINESSPROFILE: json request
+BUSINESSPROFILE -> QUICKBOOKS: json send: profileType
+QUICKBOOKS -> QUICKBOOKS: check profileType ("SP")
+
+note over BUSINESSPROFILE
+    check: business profileType
+end note
+
+QUICKBOOKS -> QUICKBOOKSAPI: json request: account read
+QUICKBOOKSAPI -> QUICKBOOKS: json send: account info
+QUICKBOOKS -> QUICKBOOKS: check if account exists
+note over QUICKBOOKS
+    if account exists
+end note
+
+QUICKBOOKS -> QUICKBOOKSAPI: json request: get "description" contents (for counting orders per tail number)
+QUICKBOOKSAPI -> QUICKBOOKS: send "description" contents
+QUICKBOOKS -> QUICKBOOKS: increase count by 1 and recalculate fee
+QUICKBOOKS -> QUICKBOOKSAPI: update invoice "description" and fee amount for tail number
+note over QUICKBOOKS
+    if account does not exist
+end note
+
+QUICKBOOKS -> QUICKBOOKS: create new account object
+QUICKBOOKS -> QUICKBOOKSAPI: send new account object
+QUICKBOOKSAPI -> QUICKBOOKS: read new account object (to create invoice)
+QUICKBOOKS -> QUICKBOOKS: calculate fee (minimum fee for first order)
+QUICKBOOKS -> QUICKBOOKSAPI: create invoice and populate
+
+
+@enduml
